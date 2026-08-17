@@ -3,7 +3,7 @@ esp32_bridge:
     serial_port: /dev/ttyUSB1     # overridden by the esp32_port launch arg in bringup_launch.py when launched via that file
     baud_rate: 115200
     wheel_diameter_m: 0.1524      # 6 inch wheel, confirmed
-    wheel_base_m: 0.30            # TODO: measure the actual distance between left/right wheel centers (m)
+    wheel_base_m: 0.41            # TODO: measure the actual distance between left/right wheel centers (m)
     ticks_per_rev: 60             # pole_pairs(10) * 6, matches the firmware
     max_wheel_speed_mps: 0.5      # TODO: tune to your motors' real top speed
     odom_frame_id: odom
