@@ -32,7 +32,7 @@ def generate_launch_description():
         # Placeholders (0,0,0) - measure and update the actual mounting offsets.
         Node(
             package='tf2_ros', executable='static_transform_publisher', name='base_to_laser',
-            arguments=['0', '0', '0.1', '0', '0', '0', 'base_link', 'laser'],
+            arguments=['0', '0', '0.1', '3.14159', '0', '0', 'base_link', 'laser'],
         ),
         Node(
             package='tf2_ros', executable='static_transform_publisher', name='base_to_imu',
