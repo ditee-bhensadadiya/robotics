@@ -20,6 +20,8 @@
 #include <Wire.h>
 #include <math.h>
 
+struct HallCtx;  // forward declaration so Arduino's auto-generated prototypes compile
+
 // ---------------------------------------------------------------------------
 // CONFIG - pins from your wiring
 // ---------------------------------------------------------------------------
