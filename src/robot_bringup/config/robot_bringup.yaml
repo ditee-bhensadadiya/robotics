@@ -1,6 +1,6 @@
 esp32_bridge:
   ros__parameters:
-    serial_port: /dev/ttyUSB0     # confirm with: ls -l /dev/ttyUSB* /dev/ttyACM* after plugging in the ESP32
+    serial_port: /dev/ttyUSB1     # overridden by the esp32_port launch arg in bringup_launch.py when launched via that file
     baud_rate: 115200
     wheel_diameter_m: 0.1524      # 6 inch wheel, confirmed
     wheel_base_m: 0.30            # TODO: measure the actual distance between left/right wheel centers (m)

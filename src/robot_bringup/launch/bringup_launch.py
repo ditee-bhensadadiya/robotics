@@ -19,13 +19,13 @@ from launch_ros.actions import Node
 def generate_launch_description():
     bringup_share = get_package_share_directory('robot_bringup')
 
-    esp32_port = LaunchConfiguration('esp32_port', default='/dev/esp32')
-    lidar_port = LaunchConfiguration('lidar_port', default='/dev/rplidar')
+    esp32_port = LaunchConfiguration('esp32_port', default='/dev/ttyUSB1')
+    lidar_port = LaunchConfiguration('lidar_port', default='/dev/ttyUSB0')
 
     return LaunchDescription([
-        DeclareLaunchArgument('esp32_port', default_value='/dev/esp32',
+        DeclareLaunchArgument('esp32_port', default_value='/dev/ttyUSB1',
                                description='Serial device for the ESP32 (udev symlink recommended)'),
-        DeclareLaunchArgument('lidar_port', default_value='/dev/rplidar',
+        DeclareLaunchArgument('lidar_port', default_value='/dev/ttyUSB0',
                                description='Serial device for the RPLidar (udev symlink recommended)'),
 
         # --- Static TF: sensor frames relative to base_link ---

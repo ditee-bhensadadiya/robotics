@@ -1,0 +1,30 @@
+[1.016s] Invoking command in '/home/ditee/ros2_ws/build/robot_bringup': AMENT_PREFIX_PATH=/home/ditee/ros2_ws/install/rplidar_ros:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/ditee/ros2_ws/install/rplidar_ros PYTHONPATH=/home/ditee/ros2_ws/build/robot_bringup/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/ditee/ros2_ws/install/robot_bringup/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/ditee/ros2_ws/build/robot_bringup/build --no-deps symlink_data
+[1.293s] running develop
+[1.440s] running egg_info
+[1.440s] creating robot_bringup.egg-info
+[1.440s] writing robot_bringup.egg-info/PKG-INFO
+[1.440s] writing dependency_links to robot_bringup.egg-info/dependency_links.txt
+[1.440s] writing entry points to robot_bringup.egg-info/entry_points.txt
+[1.441s] writing requirements to robot_bringup.egg-info/requires.txt
+[1.441s] writing top-level names to robot_bringup.egg-info/top_level.txt
+[1.441s] writing manifest file 'robot_bringup.egg-info/SOURCES.txt'
+[1.442s] reading manifest file 'robot_bringup.egg-info/SOURCES.txt'
+[1.443s] writing manifest file 'robot_bringup.egg-info/SOURCES.txt'
+[1.444s] running build_ext
+[1.444s] Creating /home/ditee/ros2_ws/install/robot_bringup/lib/python3.10/site-packages/robot-bringup.egg-link (link to .)
+[1.445s] Installing esp32_bridge_node script to /home/ditee/ros2_ws/install/robot_bringup/lib/robot_bringup
+[1.445s] 
+[1.445s] Installed /home/ditee/ros2_ws/build/robot_bringup
+[1.446s] running symlink_data
+[1.446s] creating /home/ditee/ros2_ws/install/robot_bringup/share/ament_index
+[1.446s] creating /home/ditee/ros2_ws/install/robot_bringup/share/ament_index/resource_index
+[1.446s] creating /home/ditee/ros2_ws/install/robot_bringup/share/ament_index/resource_index/packages
+[1.446s] symbolically linking /home/ditee/ros2_ws/build/robot_bringup/resource/robot_bringup -> /home/ditee/ros2_ws/install/robot_bringup/share/ament_index/resource_index/packages
+[1.446s] symbolically linking /home/ditee/ros2_ws/build/robot_bringup/package.xml -> /home/ditee/ros2_ws/install/robot_bringup/share/robot_bringup
+[1.446s] creating /home/ditee/ros2_ws/install/robot_bringup/share/robot_bringup/launch
+[1.446s] symbolically linking /home/ditee/ros2_ws/build/robot_bringup/launch/bringup_launch.py -> /home/ditee/ros2_ws/install/robot_bringup/share/robot_bringup/launch
+[1.447s] creating /home/ditee/ros2_ws/install/robot_bringup/share/robot_bringup/config
+[1.447s] symbolically linking /home/ditee/ros2_ws/build/robot_bringup/config/robot_bringup.yaml -> /home/ditee/ros2_ws/install/robot_bringup/share/robot_bringup/config
+[1.447s] symbolically linking /home/ditee/ros2_ws/build/robot_bringup/config/mapper_params_online_async.yaml -> /home/ditee/ros2_ws/install/robot_bringup/share/robot_bringup/config
+[1.447s] symbolically linking /home/ditee/ros2_ws/build/robot_bringup/config/ekf.yaml -> /home/ditee/ros2_ws/install/robot_bringup/share/robot_bringup/config
+[1.477s] Invoked command in '/home/ditee/ros2_ws/build/robot_bringup' returned '0': AMENT_PREFIX_PATH=/home/ditee/ros2_ws/install/rplidar_ros:${AMENT_PREFIX_PATH} CMAKE_PREFIX_PATH=/home/ditee/ros2_ws/install/rplidar_ros PYTHONPATH=/home/ditee/ros2_ws/build/robot_bringup/prefix_override:/usr/lib/python3/dist-packages/colcon_core/task/python/colcon_distutils_commands:/home/ditee/ros2_ws/install/robot_bringup/lib/python3.10/site-packages:${PYTHONPATH} /usr/bin/python3 -W ignore:setup.py install is deprecated -W ignore:easy_install command is deprecated setup.py develop --editable --build-directory /home/ditee/ros2_ws/build/robot_bringup/build --no-deps symlink_data
