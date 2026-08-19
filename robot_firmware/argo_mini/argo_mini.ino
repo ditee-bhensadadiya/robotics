@@ -1,0 +1,291 @@
+#include "driver/dac.h"
+
+// ---- Hall sensors ----
+#define HALL_LA 32
+#define HALL_LB 34
+#define HALL_LC 35
+#define HALL_RA 13
+#define HALL_RB 14
+#define HALL_RC 27
+
+// ---- DAC channels ----
+#define THROTTLE_R DAC_CHAN_0   // GPIO25
+#define THROTTLE_L DAC_CHAN_1   // GPIO26
+
+// ---- Direction pins (active-LOW: LOW = reverse) ----
+#define DIR_L 2
+#define DIR_R 4
+
+// ---- DAC range ----
+#define DAC_MIN       108
+#define DAC_MAX       135
+#define POLE_PAIRS    10
+#define TICKS_PER_REV (POLE_PAIRS * 6)
+
+// ---- Ultrasonic sensors (HC-SR04) ----
+// Single shared trigger; each sensor has its own echo pin.
+// All 4 sensors fire simultaneously on each trigger pulse.
+#define US_TRIG          16
+#define US_NUM           4
+#define US_INTERVAL_MS   100UL   // 10 Hz; max echo at 4 m ~ 23 ms, well within window
+#define US_TIMEOUT_US    25000UL // ~4.25 m; echo longer than this = no object
+
+const uint8_t US_ECHO[US_NUM] = {18, 19, 5, 17};  // FL, FR, BL, BR
+
+volatile uint32_t _usRise[US_NUM];   // micros() at echo rising edge
+volatile uint32_t _usDur[US_NUM];    // echo pulse width in us
+volatile bool     _usHit[US_NUM];    // true once a complete echo is captured
+
+// One ISR per echo pin - CHANGE fires on both rising and falling edge.
+// On rising edge: record start time.
+// On falling edge: record duration if a valid rise was seen.
+#define DEF_US_ISR(IDX, PIN)                                        \
+  void IRAM_ATTR _usISR_##IDX() {                                   \
+    if (digitalRead(PIN)) {                                          \
+      _usRise[IDX] = micros();                                       \
+    } else if (_usRise[IDX]) {                                       \
+      _usDur[IDX] = micros() - _usRise[IDX];                        \
+      _usHit[IDX] = true;                                            \
+    }                                                                \
+  }
+
+DEF_US_ISR(0, 18)
+DEF_US_ISR(1, 19)
+DEF_US_ISR(2,  5)
+DEF_US_ISR(3, 17)
+
+// Fire a 10 us trigger pulse and reset capture state.
+// delayMicroseconds(10) blocks ~0.02 % of the 50 ms motor loop - negligible.
+void fireUS() {
+  for (int i = 0; i < US_NUM; i++) { _usRise[i] = 0; _usHit[i] = false; }
+  digitalWrite(US_TRIG, HIGH);
+  delayMicroseconds(10);
+  digitalWrite(US_TRIG, LOW);
+}
+
+// Non-blocking - call every loop() iteration.
+// Reads echo results from the previous trigger, publishes them, then re-fires.
+static uint32_t _lastUsTrigMs = 0;
+
+void updateUS(uint32_t now) {
+  if (now - _lastUsTrigMs < US_INTERVAL_MS) return;
+  _lastUsTrigMs = now;
+
+  int d[US_NUM];
+  for (int i = 0; i < US_NUM; i++) {
+    if (_usHit[i] && _usDur[i] < US_TIMEOUT_US) {
+      int cm = (int)(_usDur[i] / 58U);          // us / 58 -> cm (round-trip)
+      d[i] = (cm >= 2 && cm <= 400) ? cm : -1;  // clamp to sensor spec
+    } else {
+      d[i] = -1;   // timeout or no echo - out of range
+    }
+  }
+
+  // "U <fl_cm> <fr_cm> <bl_cm> <br_cm>"  (-1 = out of range / no echo)
+  Serial.printf("U %d %d %d %d\n", d[0], d[1], d[2], d[3]);
+
+  fireUS();   // arm the next reading cycle
+}
+
+// ---- Left encoder correction (left encoder reads half pulses vs right) ----
+// Multiply left measured RPM by this factor to get true physical RPM.
+// Set to match left_tick_scale in serial_bridge.py (calibrated = 2.0)
+#define LEFT_TICK_SCALE 0.66f
+
+// ---- RPM velocity PI controller ----
+// Tune on hardware if needed:
+//   KP too high -> oscillation/hunting around target RPM
+//   KI too high -> overshoot and slow recovery
+//   KP too low  -> slow to reach target, sluggish response
+//   KI too low  -> steady-state error (actual RPM doesn't match target)
+#define KP     3.0f
+#define KI     2.0f
+#define I_MAX  12.0f   // anti-windup: caps integral contribution
+
+// ---- Direction flags ----
+volatile bool leftReverse  = false;
+volatile bool rightReverse = false;
+
+// ---- Odometry counters ----
+volatile long     leftTicks   = 0;
+volatile long     rightTicks  = 0;
+volatile uint32_t leftPulses  = 0;
+volatile uint32_t rightPulses = 0;
+
+void IRAM_ATTR leftISR() {
+  if (leftReverse) leftTicks -= 1; else leftTicks += 1;
+  leftPulses += 1;
+}
+void IRAM_ATTR rightISR() {
+  if (rightReverse) rightTicks -= 1; else rightTicks += 1;
+  rightPulses += 1;
+}
+
+// ---- Motor drive ----
+// Direction comes from the global flags, NOT the sign of l/r.
+// This way setDAC(0, 0) during a hold still drives DIR correctly.
+void setDAC(int l, int r) {
+  digitalWrite(DIR_L, leftReverse  ? LOW : HIGH);
+  digitalWrite(DIR_R, rightReverse ? LOW : HIGH);
+  dac_output_voltage(THROTTLE_L, (l == 0) ? 0 : constrain(abs(l), DAC_MIN, DAC_MAX));
+  dac_output_voltage(THROTTLE_R, (r == 0) ? 0 : constrain(abs(r), DAC_MIN, DAC_MAX));
+}
+
+// ---- RPM targets and PI state ----
+float targetRpmL = 0.0f, targetRpmR = 0.0f;
+float integralL  = 0.0f, integralR  = 0.0f;
+int   dacL = 0, dacR = 0;
+// Cycles to hold DAC=0 after a direction flip so the ESC sees the new DIR pin
+// before throttle is applied (3 x 50 ms = 150 ms).
+uint8_t holdCyclesL = 0, holdCyclesR = 0;
+#define DIR_HOLD_CYCLES 3
+
+// ---- Setup ----
+void setup() {
+  Serial.begin(115200);
+  Serial.setTimeout(50);
+
+  pinMode(HALL_LA, INPUT); pinMode(HALL_LB, INPUT); pinMode(HALL_LC, INPUT);
+  pinMode(HALL_RA, INPUT); pinMode(HALL_RB, INPUT); pinMode(HALL_RC, INPUT);
+
+  attachInterrupt(digitalPinToInterrupt(HALL_LA), leftISR,  CHANGE);
+  attachInterrupt(digitalPinToInterrupt(HALL_LB), leftISR,  CHANGE);
+  attachInterrupt(digitalPinToInterrupt(HALL_LC), leftISR,  CHANGE);
+  attachInterrupt(digitalPinToInterrupt(HALL_RA), rightISR, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(HALL_RB), rightISR, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(HALL_RC), rightISR, CHANGE);
+
+  pinMode(DIR_L, OUTPUT); digitalWrite(DIR_L, HIGH);
+  pinMode(DIR_R, OUTPUT); digitalWrite(DIR_R, HIGH);
+
+  dac_output_enable(THROTTLE_L);
+  dac_output_enable(THROTTLE_R);
+  setDAC(0, 0);
+
+  // ---- Ultrasonic setup ----
+  pinMode(US_TRIG, OUTPUT);
+  digitalWrite(US_TRIG, LOW);
+  for (int i = 0; i < US_NUM; i++) {
+    pinMode(US_ECHO[i], INPUT);
+  }
+  attachInterrupt(digitalPinToInterrupt(18), _usISR_0, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(19), _usISR_1, CHANGE);
+  attachInterrupt(digitalPinToInterrupt( 5), _usISR_2, CHANGE);
+  attachInterrupt(digitalPinToInterrupt(17), _usISR_3, CHANGE);
+  delay(10);   // let sensors settle before first trigger
+  fireUS();    // prime the first reading cycle
+
+  Serial.println("ARGO MINI READY");
+}
+
+// ---- Loop ----
+void loop() {
+  uint32_t now = millis();
+  updateUS(now);   // non-blocking; publishes "U <fl> <fr> <bl> <br>" at 10 Hz
+
+  // ---- Serial command parser ----
+  if (Serial.available()) {
+    String line = Serial.readStringUntil('\n');
+    line.trim();
+
+    if (line.startsWith("V ")) {
+      // Format: "V <rpm_left> <rpm_right>" - floats, signed (negative = reverse)
+      int spaceIdx = line.indexOf(' ', 2);
+      if (spaceIdx > 0) {
+        float rL = line.substring(2, spaceIdx).toFloat();
+        float rR = line.substring(spaceIdx + 1).toFloat();
+
+        // Enforce symmetric tank turns: equal magnitude, opposite direction
+        if (rL > 0 && rR < 0) rR = -rL;
+        else if (rL < 0 && rR > 0) rL = -rR;
+
+        bool newLeftRev  = (rL < 0);
+        bool newRightRev = (rR < 0);
+
+        // On direction flip: clear integral and hold DAC at 0 so the ESC sees
+        // the new DIR pin state before throttle is reapplied.
+        if (newLeftRev  != leftReverse)  { integralL = 0.0f; holdCyclesL = DIR_HOLD_CYCLES; }
+        if (newRightRev != rightReverse) { integralR = 0.0f; holdCyclesR = DIR_HOLD_CYCLES; }
+
+        targetRpmL = rL;
+        targetRpmR = rR;
+
+        leftReverse  = newLeftRev;
+        rightReverse = newRightRev;
+        digitalWrite(DIR_L, leftReverse  ? LOW : HIGH);
+        digitalWrite(DIR_R, rightReverse ? LOW : HIGH);
+      }
+    } else if (line == "S") {
+      targetRpmL = 0; targetRpmR = 0;
+      integralL  = 0; integralR  = 0;
+      dacL = 0;       dacR = 0;
+      holdCyclesL = 0; holdCyclesR = 0;
+      leftReverse  = false;
+      rightReverse = false;
+      setDAC(0, 0);   // globals false -> DIR HIGH, DAC 0
+      Serial.println("STOP");
+    } else if (line == "R") {
+      noInterrupts();
+      leftTicks = 0; rightTicks = 0;
+      interrupts();
+      Serial.println("ODOM_RESET");
+    }
+  }
+
+  // ---- Odometry + PI velocity control at 20 Hz ----
+  static uint32_t lastPrint = 0;
+  if (now - lastPrint >= 50) {
+    float elapsed = (now - lastPrint) / 1000.0f;
+    lastPrint = now;
+
+    noInterrupts();
+    uint32_t lp = leftPulses;  leftPulses  = 0;
+    uint32_t rp = rightPulses; rightPulses = 0;
+    long lt = leftTicks;
+    long rt = rightTicks;
+    interrupts();
+
+    // Measured RPM - apply LEFT_TICK_SCALE to correct encoder asymmetry
+    float measRpmL = (float)lp / elapsed * 60.0f / TICKS_PER_REV * LEFT_TICK_SCALE;
+    float measRpmR = (float)rp / elapsed * 60.0f / TICKS_PER_REV;
+
+    // PI - left wheel
+    if (holdCyclesL > 0) {
+      // DIR pin already set; hold throttle at 0 so ESC recognises direction change
+      dacL = 0;
+      holdCyclesL--;
+    } else if (abs(targetRpmL) < 1.0f) {
+      dacL = 0;
+      integralL = 0.0f;
+    } else {
+      float errL = abs(targetRpmL) - measRpmL;
+      integralL = constrain(integralL + errL * elapsed, -I_MAX, I_MAX);
+      dacL = constrain(DAC_MIN + (int)(KP * errL + KI * integralL), DAC_MIN, DAC_MAX);
+    }
+
+    // PI - right wheel
+    if (holdCyclesR > 0) {
+      dacR = 0;
+      holdCyclesR--;
+    } else if (abs(targetRpmR) < 1.0f) {
+      dacR = 0;
+      integralR = 0.0f;
+    } else {
+      float errR = abs(targetRpmR) - measRpmR;
+      integralR = constrain(integralR + errR * elapsed, -I_MAX, I_MAX);
+      dacR = constrain(DAC_MIN + (int)(KP * errR + KI * integralR), DAC_MIN, DAC_MAX);
+    }
+
+    // dacL/dacR are always positive magnitudes; setDAC uses leftReverse/rightReverse
+    // globals for direction, so passing 0 during a hold still keeps DIR correct.
+    setDAC(dacL, dacR);
+
+    // Publish odometry ticks at 20 Hz
+    Serial.printf("O %ld %ld\n", lt, rt);
+
+    // Publish measured RPM at 2 Hz for monitoring
+    if (now % 500 < 50) {
+      Serial.printf("R %.1f %.1f\n", measRpmL, measRpmR);
+    }
+  }
+}

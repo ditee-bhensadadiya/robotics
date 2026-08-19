@@ -1,0 +1,104 @@
+<?xml version="1.0"?>
+<robot name="argo_mini" xmlns:xacro="http://www.ros.org/wiki/xacro">
+
+  <!-- Values mirrored from serial_bridge_node.py - keep both in sync. -->
+  <xacro:property name="wheel_radius" value="0.08255"/>
+  <xacro:property name="wheel_base"   value="0.41"/>
+  <xacro:property name="wheel_width"  value="0.04"/>
+
+  <!-- Chassis size - measure and correct to your actual robot. -->
+  <xacro:property name="chassis_length" value="0.35"/>
+  <xacro:property name="chassis_width"  value="0.30"/>
+  <xacro:property name="chassis_height" value="0.12"/>
+
+  <material name="chassis_grey"><color rgba="0.3 0.3 0.3 1"/></material>
+  <material name="wheel_black"><color rgba="0.05 0.05 0.05 1"/></material>
+  <material name="sensor_blue"><color rgba="0.2 0.4 0.9 1"/></material>
+
+  <!-- REP-105: base_footprint is the ground-projected robot origin; -->
+  <!-- base_link sits wheel_radius above it, at the wheel-axle height. -->
+  <link name="base_footprint"/>
+
+  <link name="base_link">
+    <visual>
+      <geometry><box size="${chassis_length} ${chassis_width} ${chassis_height}"/></geometry>
+      <material name="chassis_grey"/>
+    </visual>
+    <collision>
+      <geometry><box size="${chassis_length} ${chassis_width} ${chassis_height}"/></geometry>
+    </collision>
+  </link>
+
+  <joint name="base_footprint_to_base_link" type="fixed">
+    <parent link="base_footprint"/>
+    <child link="base_link"/>
+    <origin xyz="0 0 ${wheel_radius}" rpy="0 0 0"/>
+  </joint>
+
+  <!-- Wheels - fixed joints (no wheel odometry/joint_state publishing yet).
+       Switch to type="continuous" + add joint_state_publisher if you want
+       the wheels to visually spin in RViz. -->
+  <xacro:macro name="wheel" params="side y_offset">
+    <link name="${side}_wheel">
+      <visual>
+        <origin xyz="0 0 0" rpy="${pi/2} 0 0"/>
+        <geometry><cylinder radius="${wheel_radius}" length="${wheel_width}"/></geometry>
+        <material name="wheel_black"/>
+      </visual>
+    </link>
+    <joint name="base_to_${side}_wheel" type="fixed">
+      <parent link="base_link"/>
+      <child link="${side}_wheel"/>
+      <origin xyz="0 ${y_offset} 0" rpy="0 0 0"/>
+    </joint>
+  </xacro:macro>
+
+  <xacro:wheel side="left"  y_offset="${wheel_base/2}"/>
+  <xacro:wheel side="right" y_offset="${-wheel_base/2}"/>
+
+  <!-- RPLidar A1 - mounted rotated 180 deg (yaw=pi), confirmed empirically -->
+  <!-- against real scan alignment. Update x/y/z if you remeasure the mount. -->
+  <link name="laser">
+    <visual>
+      <geometry><cylinder radius="0.038" length="0.04"/></geometry>
+      <material name="sensor_blue"/>
+    </visual>
+  </link>
+  <joint name="base_to_laser" type="fixed">
+    <parent link="base_link"/>
+    <child link="laser"/>
+    <origin xyz="0 0 0.1" rpy="0 0 3.14159"/>
+  </joint>
+
+  <!-- IMU - not populated by the current argo_mini.ino firmware (no MPU6050
+       code yet); frame kept for when gyro support is added. -->
+  <link name="imu_link"/>
+  <joint name="base_to_imu" type="fixed">
+    <parent link="base_link"/>
+    <child link="imu_link"/>
+    <origin xyz="0 0 0" rpy="0 0 0"/>
+  </joint>
+
+  <!-- Ultrasonic sensors (HC-SR04 x4) - frame ids must match
+       SerialBridge._us_frame_ids in serial_bridge_node.py exactly.
+       Placeholder corner positions - measure and update the real mounts. -->
+  <xacro:macro name="us_sensor" params="name x y">
+    <link name="${name}">
+      <visual>
+        <geometry><box size="0.02 0.02 0.01"/></geometry>
+        <material name="sensor_blue"/>
+      </visual>
+    </link>
+    <joint name="base_to_${name}" type="fixed">
+      <parent link="base_link"/>
+      <child link="${name}"/>
+      <origin xyz="${x} ${y} 0.05" rpy="0 0 0"/>
+    </joint>
+  </xacro:macro>
+
+  <xacro:us_sensor name="us_fl" x="${chassis_length/2}"  y="${chassis_width/2}"/>
+  <xacro:us_sensor name="us_fr" x="${chassis_length/2}"  y="${-chassis_width/2}"/>
+  <xacro:us_sensor name="us_bl" x="${-chassis_length/2}" y="${chassis_width/2}"/>
+  <xacro:us_sensor name="us_br" x="${-chassis_length/2}" y="${-chassis_width/2}"/>
+
+</robot>
