@@ -102,12 +102,6 @@ void updateUS(uint32_t now) {
 #define KI     2.0f
 #define I_MAX  12.0f   // anti-windup: caps integral contribution
 
-// If no "V " command arrives for this long, force motors to stop - a safety
-// net independent of the Jetson/bridge (protects against a dead serial link
-// or a crashed bridge process, not just a normal teleop key release).
-#define CMD_TIMEOUT_MS 500
-uint32_t lastCmdMs = 0;
-
 // ---- Direction flags ----
 volatile bool leftReverse  = false;
 volatile bool rightReverse = false;
@@ -181,7 +175,6 @@ void setup() {
   delay(10);   // let sensors settle before first trigger
   fireUS();    // prime the first reading cycle
 
-  lastCmdMs = millis();
   Serial.println("ARGO MINI READY");
 }
 
@@ -216,7 +209,6 @@ void loop() {
 
         targetRpmL = rL;
         targetRpmR = rR;
-        lastCmdMs  = now;
 
         leftReverse  = newLeftRev;
         rightReverse = newRightRev;
@@ -238,12 +230,6 @@ void loop() {
       interrupts();
       Serial.println("ODOM_RESET");
     }
-  }
-
-  // No "V " command in CMD_TIMEOUT_MS -> force stop (dead link or crashed bridge).
-  if (now - lastCmdMs > CMD_TIMEOUT_MS) {
-    targetRpmL = 0;
-    targetRpmR = 0;
   }
 
   // ---- Odometry + PI velocity control at 20 Hz ----
