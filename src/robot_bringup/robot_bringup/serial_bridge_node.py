@@ -34,12 +34,14 @@ class SerialBridge(Node):
         self.declare_parameter('left_tick_scale', 1.0)
         self.declare_parameter('disable_tank_turns', False)
         self.declare_parameter('imu_flip_z', False)
+        self.declare_parameter('angular_scale', 1.0)
         port = self.get_parameter('port').value
         baud = self.get_parameter('baud').value
         self.forward_only       = self.get_parameter('forward_only').value
         self.left_tick_scale    = self.get_parameter('left_tick_scale').value
         self.disable_tank_turns = self.get_parameter('disable_tank_turns').value
         self.imu_flip_z         = self.get_parameter('imu_flip_z').value
+        self.angular_scale      = self.get_parameter('angular_scale').value
 
         if self.forward_only:
             self.get_logger().info('forward_only=true: reverse commands blocked')
@@ -140,7 +142,7 @@ class SerialBridge(Node):
         self.last_cmd = self.get_clock().now()
         self._last_watchdog_stop = False
         lin = msg.linear.x
-        ang = msg.angular.z
+        ang = msg.angular.z * self.angular_scale
         self.get_logger().info(f'cmd_cb: lin={lin:.3f} ang={ang:.3f}')
 
         if self.forward_only and lin < 0.0:
