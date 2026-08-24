@@ -110,7 +110,7 @@ class SerialBridge(Node):
 
     def watchdog(self):
         elapsed = (self.get_clock().now() - self.last_cmd).nanoseconds / 1e9
-        if elapsed > 1.0 and not self._last_watchdog_stop:
+        if elapsed > 0.3 and not self._last_watchdog_stop:
             try:
                 self.ser.write(b'S\n')
                 self.ser.flush()
