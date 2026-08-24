@@ -27,12 +27,15 @@ def generate_launch_description():
 
     esp32_port = LaunchConfiguration('esp32_port', default='/dev/ttyUSB1')
     lidar_port = LaunchConfiguration('lidar_port', default='/dev/ttyUSB0')
+    left_tick_scale = LaunchConfiguration('left_tick_scale', default='1.0')
 
     return LaunchDescription([
         DeclareLaunchArgument('esp32_port', default_value='/dev/ttyUSB1',
                                description='Serial device for the ESP32 (udev symlink recommended)'),
         DeclareLaunchArgument('lidar_port', default_value='/dev/ttyUSB0',
                                description='Serial device for the RPLidar (udev symlink recommended)'),
+        DeclareLaunchArgument('left_tick_scale', default_value='1.0',
+                               description='Left wheel odometry tick correction factor - calibrate by driving straight and checking /odom drift'),
 
         # --- Robot description: base_footprint/base_link + laser/imu/ultrasonic
         # frames, all defined in urdf/argo_mini.urdf.xacro ---
@@ -62,6 +65,7 @@ def generate_launch_description():
             parameters=[{
                 'port': esp32_port,
                 'baud': 115200,
+                'left_tick_scale': left_tick_scale,
             }],
             output='screen',
         ),
