@@ -27,7 +27,7 @@ def generate_launch_description():
 
     esp32_port = LaunchConfiguration('esp32_port', default='/dev/ttyUSB1')
     lidar_port = LaunchConfiguration('lidar_port', default='/dev/ttyUSB0')
-    left_tick_scale = LaunchConfiguration('left_tick_scale', default='0.66')
+    left_tick_scale = LaunchConfiguration('left_tick_scale', default='1.135')
     angular_scale = LaunchConfiguration('angular_scale', default='0.5')
 
     return LaunchDescription([
@@ -35,7 +35,7 @@ def generate_launch_description():
                                description='Serial device for the ESP32 (udev symlink recommended)'),
         DeclareLaunchArgument('lidar_port', default_value='/dev/ttyUSB0',
                                description='Serial device for the RPLidar (udev symlink recommended)'),
-        DeclareLaunchArgument('left_tick_scale', default_value='0.66',
+        DeclareLaunchArgument('left_tick_scale', default_value='1.135',
                                description='Left wheel odometry tick correction factor - calibrate by driving straight and checking /odom drift'),
         DeclareLaunchArgument('angular_scale', default_value='0.5',
                                description='Multiplier applied to /cmd_vel angular.z - lower this if the robot turns more than commanded'),
