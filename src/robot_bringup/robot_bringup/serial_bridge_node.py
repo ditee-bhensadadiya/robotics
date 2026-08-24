@@ -305,7 +305,8 @@ def main():
             node.destroy_node()
         except Exception:
             pass
-        rclpy.shutdown()
+        if rclpy.ok():
+            rclpy.shutdown()
 
 
 if __name__ == '__main__':
