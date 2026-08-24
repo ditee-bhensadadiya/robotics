@@ -1,1 +1,0 @@
-/home/ditee/ros2_ws/src/robot_bringup/launch/bringup_launch.py

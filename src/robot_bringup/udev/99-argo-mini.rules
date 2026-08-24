@@ -1,0 +1,24 @@
+# Stable /dev names for the ESP32 and RPLidar, matched by USB Product ID
+# (idProduct) so plug order/enumeration no longer decides which one becomes
+# ttyUSB0 vs ttyUSB1. bringup_launch.py defaults to /dev/esp32 and
+# /dev/rplidar - install this file and those defaults just work.
+#
+# --- How to find your two idProduct values (do this on the Jetson) ---
+#   1. Unplug both the ESP32 and the RPLidar.
+#   2. Plug in ONLY the ESP32, then run:
+#        udevadm info -a -n /dev/ttyUSB0 | grep -m1 idProduct
+#      Copy the 4-hex-digit value into ESP32_PID below.
+#   3. Unplug it, plug in ONLY the RPLidar, run the same command against
+#      whichever /dev/ttyUSBx it shows up as, and fill in LIDAR_PID.
+#   4. If both devices happen to report the SAME idProduct (identical USB
+#      serial chip on both), Product ID alone can't tell them apart - you
+#      need to match on idVendor+idProduct+serial instead (ATTRS{serial}==).
+#
+# --- Install ---
+#   sudo cp 99-argo-mini.rules /etc/udev/rules.d/
+#   sudo udevadm control --reload-rules
+#   sudo udevadm trigger
+#   ls -l /dev/esp32 /dev/rplidar   # confirm both symlinks appear
+
+SUBSYSTEM=="tty", ATTRS{idProduct}=="XXXX", SYMLINK+="esp32"
+SUBSYSTEM=="tty", ATTRS{idProduct}=="YYYY", SYMLINK+="rplidar"
