@@ -244,7 +244,7 @@ class SerialBridge(Node):
             return
 
         d_center      = (dl + dr) / 2.0
-        d_theta_wheel = (dr - dl) / WHEEL_BASE
+        d_theta_wheel = (dl - dr) / WHEEL_BASE
 
         now = self.get_clock().now()
         dt  = (now - self.last_time).nanoseconds / 1e9
