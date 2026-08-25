@@ -29,6 +29,7 @@ def generate_launch_description():
     lidar_port = LaunchConfiguration('lidar_port', default='/dev/ttyUSB0')
     left_tick_scale = LaunchConfiguration('left_tick_scale', default='1.135')
     angular_scale = LaunchConfiguration('angular_scale', default='0.5')
+    disable_tank_turns = LaunchConfiguration('disable_tank_turns', default='true')
 
     return LaunchDescription([
         DeclareLaunchArgument('esp32_port', default_value='/dev/ttyUSB1',
@@ -39,6 +40,8 @@ def generate_launch_description():
                                description='Left wheel odometry tick correction factor - calibrate by driving straight and checking /odom drift'),
         DeclareLaunchArgument('angular_scale', default_value='0.5',
                                description='Multiplier applied to /cmd_vel angular.z - lower this if the robot turns more than commanded'),
+        DeclareLaunchArgument('disable_tank_turns', default_value='true',
+                               description='If true, never spin both wheels in opposite directions - stop the slower wheel and pivot with the other instead'),
 
         # --- Robot description: base_footprint/base_link + laser/imu/ultrasonic
         # frames, all defined in urdf/argo_mini.urdf.xacro ---
@@ -70,6 +73,7 @@ def generate_launch_description():
                 'baud': 115200,
                 'left_tick_scale': left_tick_scale,
                 'angular_scale': angular_scale,
+                'disable_tank_turns': disable_tank_turns,
             }],
             output='screen',
         ),

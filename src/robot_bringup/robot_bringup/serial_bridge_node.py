@@ -155,13 +155,14 @@ class SerialBridge(Node):
             v_l = lin - ang * (WHEEL_BASE / 2.0)
             v_r = lin + ang * (WHEEL_BASE / 2.0)
 
-            if self.disable_tank_turns:
-                if v_l * v_r < 0:
-                    max_ang = abs(lin) * (WHEEL_BASE / 2.0) if abs(lin) > 0.05 else 0.0
-                    if abs(ang) > max_ang and max_ang < 0.01:
-                        ang = 0.0
-                        v_l = lin
-                        v_r = lin
+            if self.disable_tank_turns and v_l * v_r < 0:
+                # Wheels would spin in opposite directions (a tank/pivot-in-place
+                # turn). Stop the slower side instead, so the other wheel alone
+                # drives the turn - never opposite directions simultaneously.
+                if abs(v_l) < abs(v_r):
+                    v_l = 0.0
+                else:
+                    v_r = 0.0
 
             # Cap to VMAX - scale both wheels proportionally if either exceeds limit
             peak = max(abs(v_l), abs(v_r))
