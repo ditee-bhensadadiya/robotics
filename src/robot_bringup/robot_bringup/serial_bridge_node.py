@@ -1,3 +1,27 @@
+  GNU nano 6.2                    serial_bridge.py                              
+Killed rclpy
+argo@argo-desktop:~/my_project/argo_sonic/src/argo_mini/argo_mini$ 
+from geometry_msgs.msg import Twist, TransformStamped
+from nav_msgs.msg import Odometry
+from sensor_msgs.msg import Range
+from std_msgs.msg import Float32MultiArray
+from tf2_ros import TransformBroadcaster
+import serial
+import math
+import time
+
+WHEEL_RADIUS    = 0.08255
+WHEEL_BASE      = 0.41
+POLE_PAIRS      = 10
+TICKS_PER_REV   = POLE_PAIRS * 6   # 60 ticks/rev (10 pole pairs ? 6 Hall edges)
+METERS_PER_TICK = (2 * math.pi * WHEEL_RADIUS) / TICKS_PER_REV
+
+# IMU complementary filter ? how much to trust IMU gyro vs wheel odometry for a>
+# 0.0 = 100% wheels,  1.0 = 100% IMU,  0.95 = recommended
+IMU_ALPHA = 0.95
+                               [ Read 312 lines ]
+^G Help      ^O Write Out ^W Where Is  ^K Cut       ^T Execute   ^C Location
+^X Exit      ^R Read File ^\ Replace   ^U Paste     ^J Justify   ^/ Go To Line
 import rclpy
 from rclpy.node import Node
 from geometry_msgs.msg import Twist, TransformStamped
