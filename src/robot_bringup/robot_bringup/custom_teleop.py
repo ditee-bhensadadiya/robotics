@@ -18,6 +18,7 @@ changes, update the matching value here too.
 """
 import sys
 import termios
+import time
 import tty
 
 import rclpy
@@ -25,7 +26,15 @@ from rclpy.node import Node
 from geometry_msgs.msg import Twist
 
 WHEEL_BASE = 0.41
-ANGULAR_SCALE = 0.5
+ANGULAR_SCALE = 0.2
+
+# serial_bridge_node.py ramps each wheel's RPM toward its target by only
+# _RPM_RAMP per /cmd_vel message (protects the ESC from sudden throttle
+# jumps) - one message isn't enough to bring the stopped wheel fully to 0
+# if it was previously driving. Re-publish a pivot command a few times so
+# the ramp actually reaches 0 before we go back to waiting for a key.
+PIVOT_BURST_COUNT = 6
+PIVOT_BURST_INTERVAL = 0.03
 
 MOVE_BINDINGS = {
     'i': (1, 0),
@@ -63,16 +72,14 @@ SPEED_BINDINGS = {
 
 HELP = """
 Moving around:
-   u    i    o
-   j    k    l
-   m    ,    .
+        i
+   j         l
+        k
 
-i/, : straight forward/backward - both wheels equal
-k   : stop
-j/l/u/o/m/. : pivot turn - the inside wheel stops completely, only the
-              other wheel drives (j/u turn left going forward, l/o turn
-              right going forward, m turns left going backward, . turns
-              right going backward)
+i   : forward - both wheels equal
+k   : backward - both wheels equal
+j   : turn left - left wheel stops, right wheel drives
+l   : turn right - right wheel stops, left wheel drives
 q/z : increase/decrease max speeds by 10%
 w/x : increase/decrease only linear speed by 10%
 e/c : increase/decrease only angular speed by 10%
@@ -108,6 +115,13 @@ def main():
                 # pivot_turn() already returns final linear.x/angular.z values -
                 # no further scaling by speed/turn here.
                 x, th = pivot_turn(key, turn)
+                twist = Twist()
+                twist.linear.x = x
+                twist.angular.z = th
+                for _ in range(PIVOT_BURST_COUNT):
+                    pub.publish(twist)
+                    time.sleep(PIVOT_BURST_INTERVAL)
+                continue
             elif key in MOVE_BINDINGS:
                 mx, mth = MOVE_BINDINGS[key]
                 x, th = mx * speed, mth * turn
