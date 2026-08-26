@@ -15,6 +15,7 @@ setup(
         (os.path.join('share', package_name, 'launch'), glob('launch/*.py')),
         (os.path.join('share', package_name, 'config'), glob('config/*.yaml')),
         (os.path.join('share', package_name, 'urdf'), glob('urdf/*.xacro')),
+        (os.path.join('share', package_name, 'udev'), glob('udev/*.rules')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
@@ -25,7 +26,6 @@ setup(
     tests_require=['pytest'],
     entry_points={
         'console_scripts': [
-            'esp32_bridge_node = robot_bringup.esp32_bridge_node:main',
             'serial_bridge_node = robot_bringup.serial_bridge_node:main',
             'custom_teleop = robot_bringup.custom_teleop:main',
         ],
