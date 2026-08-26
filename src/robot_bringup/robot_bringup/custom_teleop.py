@@ -63,14 +63,16 @@ SPEED_BINDINGS = {
 
 HELP = """
 Moving around:
-        i
-   j         l
-        k
+   u    i    o
+   j    k    l
+   m    ,    .
 
-i   : forward - both wheels equal
-k   : backward - both wheels equal
-j   : turn left - left wheel stops, right wheel drives
-l   : turn right - right wheel stops, left wheel drives
+i/, : straight forward/backward - both wheels equal
+k   : stop
+j/l/u/o/m/. : pivot turn - the inside wheel stops completely, only the
+              other wheel drives (j/u turn left going forward, l/o turn
+              right going forward, m turns left going backward, . turns
+              right going backward)
 q/z : increase/decrease max speeds by 10%
 w/x : increase/decrease only linear speed by 10%
 e/c : increase/decrease only angular speed by 10%

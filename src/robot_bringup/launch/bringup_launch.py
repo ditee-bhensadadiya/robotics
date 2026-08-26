@@ -27,8 +27,8 @@ def generate_launch_description():
 
     esp32_port = LaunchConfiguration('esp32_port', default='/dev/esp32')
     lidar_port = LaunchConfiguration('lidar_port', default='/dev/rplidar')
-    left_tick_scale = LaunchConfiguration('left_tick_scale', default='1.135')
-    angular_scale = LaunchConfiguration('angular_scale', default='0.5')
+    left_tick_scale = LaunchConfiguration('left_tick_scale', default='0.66')
+    angular_scale = LaunchConfiguration('angular_scale', default='0.2')
     disable_tank_turns = LaunchConfiguration('disable_tank_turns', default='true')
 
     return LaunchDescription([
