@@ -1,9 +1,9 @@
 """Standalone keyboard teleop - publishes geometry_msgs/Twist to /cmd_vel.
 
 The two wheels are driven independently (they're different types), so every
-turn key - not just the in-place ones - fully stops the inside wheel and
-drives only the outside wheel, rather than mixing both wheels at different
-speeds. Only 'i'/',' (straight forward/backward) drive both wheels equally.
+turn key fully stops the inside wheel and drives only the outside wheel,
+rather than mixing both wheels at different speeds. Only 'i'/'k' (straight
+forward/backward) drive both wheels equally.
 
 Each turn key sends a specific (linear.x, angular.z) combination - not
 angular-only - chosen so that serial_bridge_node.py's own kinematics formula
@@ -29,23 +29,16 @@ ANGULAR_SCALE = 0.5
 
 MOVE_BINDINGS = {
     'i': (1, 0),
-    ',': (-1, 0),
+    'k': (-1, 0),
 }
 
-# Turn keys: (x, th) computed per-key below, not from a fixed ratio - see
-# pivot_turn(). 'u'/'o' are forward-biased aliases of 'j'/'l' (they send the
-# identical command - stopping a wheel fixes the lin/ang ratio, so there is
-# no in-between "curve" available); 'm'/'.' are their backward equivalents.
-PIVOT_KEYS = {'j', 'l', 'u', 'o', 'm', '.'}
+PIVOT_KEYS = {'j', 'l'}
 
-# key -> (side, dir): side=+1 stops the left wheel (turns left, right wheel
-# drives), side=-1 stops the right wheel (turns right, left wheel drives).
-# dir=+1 drives the active wheel forward, dir=-1 drives it backward.
-PIVOT_DIRS = {
-    'j': (1, 1), 'u': (1, 1),
-    'l': (-1, 1), 'o': (-1, 1),
-    'm': (1, -1),
-    '.': (-1, -1),
+# key -> side: +1 stops the left wheel (turns left, right wheel drives),
+# -1 stops the right wheel (turns right, left wheel drives).
+PIVOT_SIDES = {
+    'j': 1,
+    'l': -1,
 }
 
 
@@ -54,9 +47,9 @@ def pivot_turn(key, turn):
     the inside wheel stops completely, the other wheel does all the driving.
     Derived from serial_bridge_node.py's kinematics formula - see the module
     docstring."""
-    side, direction = PIVOT_DIRS[key]
-    lin = direction * turn * ANGULAR_SCALE * (WHEEL_BASE / 2.0)
-    ang = side * direction * turn
+    side = PIVOT_SIDES[key]
+    lin = turn * ANGULAR_SCALE * (WHEEL_BASE / 2.0)
+    ang = side * turn
     return lin, ang
 
 SPEED_BINDINGS = {
@@ -70,16 +63,14 @@ SPEED_BINDINGS = {
 
 HELP = """
 Moving around:
-   u    i    o
-   j    k    l
-   m    ,    .
+        i
+   j         l
+        k
 
-i/, : straight forward/backward - both wheels equal
-k   : stop
-j/l/u/o/m/. : pivot turn - the inside wheel stops completely, only the
-              other wheel drives (j/u turn left going forward, l/o turn
-              right going forward, m turns left going backward, . turns
-              right going backward)
+i   : forward - both wheels equal
+k   : backward - both wheels equal
+j   : turn left - left wheel stops, right wheel drives
+l   : turn right - right wheel stops, left wheel drives
 q/z : increase/decrease max speeds by 10%
 w/x : increase/decrease only linear speed by 10%
 e/c : increase/decrease only angular speed by 10%

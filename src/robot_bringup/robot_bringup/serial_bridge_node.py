@@ -32,7 +32,7 @@ class SerialBridge(Node):
         self.declare_parameter('baud', 115200)
         self.declare_parameter('forward_only', False)
         self.declare_parameter('left_tick_scale', 1.0)
-        self.declare_parameter('disable_tank_turns', False)
+        self.declare_parameter('disable_tank_turns', True)
         self.declare_parameter('imu_flip_z', False)
         self.declare_parameter('angular_scale', 1.0)
         port = self.get_parameter('port').value
