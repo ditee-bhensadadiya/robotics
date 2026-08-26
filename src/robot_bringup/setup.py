@@ -27,7 +27,6 @@ setup(
         'console_scripts': [
             'esp32_bridge_node = robot_bringup.esp32_bridge_node:main',
             'serial_bridge_node = robot_bringup.serial_bridge_node:main',
-            'custom_teleop = robot_bringup.custom_teleop:main',
         ],
     },
 )
