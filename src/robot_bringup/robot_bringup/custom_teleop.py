@@ -1,10 +1,14 @@
 """Standalone keyboard teleop - publishes geometry_msgs/Twist to /cmd_vel.
 
-Same key layout as teleop_twist_keyboard, except 'j'/'l' (pure left/right
-turn) send a specific (linear.x, angular.z) combination - not angular-only -
-chosen so that serial_bridge_node.py's own kinematics formula
+The two wheels are driven independently (they're different types), so every
+turn key - not just the in-place ones - fully stops the inside wheel and
+drives only the outside wheel, rather than mixing both wheels at different
+speeds. Only 'i'/',' (straight forward/backward) drive both wheels equally.
+
+Each turn key sends a specific (linear.x, angular.z) combination - not
+angular-only - chosen so that serial_bridge_node.py's own kinematics formula
 (v_l = lin - ang*WHEEL_BASE/2, v_r = lin + ang*WHEEL_BASE/2, with
-ang = angular.z * angular_scale) works out to exactly 0 for one wheel.
+ang = angular.z * angular_scale) works out to exactly 0 for the inside wheel.
 No serial_bridge_node.py changes needed - this is done entirely with the
 numbers sent from here.
 
@@ -26,24 +30,33 @@ ANGULAR_SCALE = 0.5
 MOVE_BINDINGS = {
     'i': (1, 0),
     ',': (-1, 0),
-    'u': (1, 1),
-    'o': (1, -1),
-    'm': (-1, 1),
+}
+
+# Turn keys: (x, th) computed per-key below, not from a fixed ratio - see
+# pivot_turn(). 'u'/'o' are forward-biased aliases of 'j'/'l' (they send the
+# identical command - stopping a wheel fixes the lin/ang ratio, so there is
+# no in-between "curve" available); 'm'/'.' are their backward equivalents.
+PIVOT_KEYS = {'j', 'l', 'u', 'o', 'm', '.'}
+
+# key -> (side, dir): side=+1 stops the left wheel (turns left, right wheel
+# drives), side=-1 stops the right wheel (turns right, left wheel drives).
+# dir=+1 drives the active wheel forward, dir=-1 drives it backward.
+PIVOT_DIRS = {
+    'j': (1, 1), 'u': (1, 1),
+    'l': (-1, 1), 'o': (-1, 1),
+    'm': (1, -1),
     '.': (-1, -1),
 }
 
-# Pure turn keys: (x, th) computed per-key below, not from a fixed ratio -
-# see pivot_turn().
-PIVOT_KEYS = {'j', 'l'}
-
 
 def pivot_turn(key, turn):
-    """(linear.x, angular.z) for a single-wheel pivot turn at the given key.
-    'j' zeroes the left wheel (turns left); 'l' zeroes the right wheel
-    (turns right). Derived from serial_bridge_node.py's kinematics formula -
-    see the module docstring."""
-    lin = turn * ANGULAR_SCALE * (WHEEL_BASE / 2.0)
-    ang = turn if key == 'j' else -turn
+    """(linear.x, angular.z) for a single-wheel pivot turn at the given key -
+    the inside wheel stops completely, the other wheel does all the driving.
+    Derived from serial_bridge_node.py's kinematics formula - see the module
+    docstring."""
+    side, direction = PIVOT_DIRS[key]
+    lin = direction * turn * ANGULAR_SCALE * (WHEEL_BASE / 2.0)
+    ang = side * direction * turn
     return lin, ang
 
 SPEED_BINDINGS = {
@@ -61,8 +74,12 @@ Moving around:
    j    k    l
    m    ,    .
 
-k : stop
-j/l : pivot turn in place - only one wheel drives, the other stays at 0
+i/, : straight forward/backward - both wheels equal
+k   : stop
+j/l/u/o/m/. : pivot turn - the inside wheel stops completely, only the
+              other wheel drives (j/u turn left going forward, l/o turn
+              right going forward, m turns left going backward, . turns
+              right going backward)
 q/z : increase/decrease max speeds by 10%
 w/x : increase/decrease only linear speed by 10%
 e/c : increase/decrease only angular speed by 10%
