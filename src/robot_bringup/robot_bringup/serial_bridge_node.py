@@ -242,11 +242,15 @@ class SerialBridge(Node):
 
         dlt = left_ticks  - self.prev_left
         drt = right_ticks - self.prev_right
-        self.prev_left  = left_ticks
-        self.prev_right = right_ticks
 
+        # Don't advance prev_left/prev_right here - if we're below the
+        # deadband, leave them alone so slow, sustained motion keeps
+        # accumulating across cycles instead of being thrown away every time.
         if abs(dlt) <= TICK_DEADBAND and abs(drt) <= TICK_DEADBAND:
             return
+
+        self.prev_left  = left_ticks
+        self.prev_right = right_ticks
 
         dl = dlt * METERS_PER_TICK * self.left_tick_scale
         dr = drt * METERS_PER_TICK
