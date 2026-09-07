@@ -26,7 +26,7 @@ def generate_launch_description():
     xacro_path = os.path.join(bringup_share, 'urdf', 'argo_mini.urdf.xacro')
 
     esp32_port = LaunchConfiguration('esp32_port', default='/dev/esp32')
-    lidar_port = LaunchConfiguration('lidar_port', default='/dev/rplidar')
+    lidar_port = LaunchConfiguration('lidar_port', default='/dev/;lidar')
     left_tick_scale = LaunchConfiguration('left_tick_scale', default='0.66')
     angular_scale = LaunchConfiguration('angular_scale', default='0.2')
     disable_tank_turns = LaunchConfiguration('disable_tank_turns', default='true')
