@@ -16,6 +16,7 @@ setup(
         (os.path.join('share', package_name, 'config'), glob('config/*.yaml')),
         (os.path.join('share', package_name, 'urdf'), glob('urdf/*.xacro')),
         (os.path.join('share', package_name, 'udev'), glob('udev/*.rules')),
+        (os.path.join('share', package_name, 'maps'), glob('maps/*.yaml') + glob('maps/*.pgm')),
     ],
     install_requires=['setuptools'],
     zip_safe=True,
