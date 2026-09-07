@@ -26,7 +26,7 @@ def generate_launch_description():
     xacro_path = os.path.join(bringup_share, 'urdf', 'argo_mini.urdf.xacro')
 
     esp32_port = LaunchConfiguration('esp32_port', default='/dev/esp32')
-    lidar_port = LaunchConfiguration('lidar_port', default='/dev/;lidar')
+    lidar_port = LaunchConfiguration('lidar_port', default='/dev/lidar')
     left_tick_scale = LaunchConfiguration('left_tick_scale', default='0.66')
     angular_scale = LaunchConfiguration('angular_scale', default='0.2')
     disable_tank_turns = LaunchConfiguration('disable_tank_turns', default='true')
@@ -34,7 +34,7 @@ def generate_launch_description():
     return LaunchDescription([
         DeclareLaunchArgument('esp32_port', default_value='/dev/esp32',
                                description='Serial device for the ESP32 (udev symlink, see udev/99-argo-mini.rules)'),
-        DeclareLaunchArgument('lidar_port', default_value='/dev/rplidar',
+        DeclareLaunchArgument('lidar_port', default_value='/dev/lidar',
                                description='Serial device for the RPLidar (udev symlink, see udev/99-argo-mini.rules)'),
         DeclareLaunchArgument('left_tick_scale', default_value='0.66',
                                description='Left wheel odometry tick correction factor - calibrate by driving straight and checking /odom drift'),
