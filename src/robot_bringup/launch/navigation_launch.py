@@ -31,10 +31,10 @@ def generate_launch_description():
     default_params = os.path.join(bringup_share, 'config', 'nav2_params.yaml')
 
     return LaunchDescription([
-        DeclareLaunchArgument('esp32_port', default_value='/dev/esp32',
-                               description='Serial device for the ESP32 (udev symlink, see udev/99-argo-mini.rules)'),
-        DeclareLaunchArgument('lidar_port', default_value='/dev/lidar',
-                               description='Serial device for the RPLidar (udev symlink, see udev/99-argo-mini.rules)'),
+        DeclareLaunchArgument('esp32_port', default_value='/dev/ttyUSB0',
+                               description='Serial device for the ESP32 (or the udev symlink from udev/99-argo-mini.rules)'),
+        DeclareLaunchArgument('lidar_port', default_value='/dev/ttyUSB1',
+                               description='Serial device for the RPLidar (or the udev symlink from udev/99-argo-mini.rules)'),
         DeclareLaunchArgument('left_tick_scale', default_value='0.66',
                                description='Left wheel odometry tick correction factor - calibrate by driving straight and checking /odom drift'),
         DeclareLaunchArgument('angular_scale', default_value='0.2',
