@@ -6,10 +6,9 @@ navigation_launch.py (localization + nav2, adds AMCL/nav2 on top of a saved
 map) so both start the exact same hardware stack.
 
 Serial ports for the lidar and the ESP32 are both /dev/ttyUSB* on the Jetson
-and their enumeration order is not guaranteed - defaults below are pinned to
-this robot's current ttyUSB0/ttyUSB1 assignment, but that can shift on
-reboot/replug. udev/99-argo-mini.rules installs stable symlinks (/dev/esp32,
-/dev/rplidar); pass those as launch args instead if enumeration order bites.
+and their enumeration order is not guaranteed, so the defaults below point at
+the udev symlinks installed by udev/99-argo-mini.rules (/dev/esp32,
+/dev/lidar) instead of raw ttyUSB0/ttyUSB1. See that file for setup.
 
 serial_bridge_node fuses wheel encoders (+ gyro, once the firmware sends one)
 itself and publishes odom->base_footprint directly, so there is no separate
@@ -29,17 +28,17 @@ def generate_launch_description():
     bringup_share = get_package_share_directory('robot_bringup')
     xacro_path = os.path.join(bringup_share, 'urdf', 'argo_mini.urdf.xacro')
 
-    esp32_port = LaunchConfiguration('esp32_port', default='/dev/ttyUSB0')
-    lidar_port = LaunchConfiguration('lidar_port', default='/dev/ttyUSB1')
+    esp32_port = LaunchConfiguration('esp32_port', default='/dev/esp32')
+    lidar_port = LaunchConfiguration('lidar_port', default='/dev/lidar')
     left_tick_scale = LaunchConfiguration('left_tick_scale', default='0.66')
     angular_scale = LaunchConfiguration('angular_scale', default='0.2')
     disable_tank_turns = LaunchConfiguration('disable_tank_turns', default='true')
 
     return LaunchDescription([
-        DeclareLaunchArgument('esp32_port', default_value='/dev/ttyUSB0',
-                               description='Serial device for the ESP32 (or the udev symlink from udev/99-argo-mini.rules)'),
-        DeclareLaunchArgument('lidar_port', default_value='/dev/ttyUSB1',
-                               description='Serial device for the RPLidar (or the udev symlink from udev/99-argo-mini.rules)'),
+        DeclareLaunchArgument('esp32_port', default_value='/dev/esp32',
+                               description='Serial device for the ESP32 (udev symlink, see udev/99-argo-mini.rules)'),
+        DeclareLaunchArgument('lidar_port', default_value='/dev/lidar',
+                               description='Serial device for the RPLidar (udev symlink, see udev/99-argo-mini.rules)'),
         DeclareLaunchArgument('left_tick_scale', default_value='0.66',
                                description='Left wheel odometry tick correction factor - calibrate by driving straight and checking /odom drift'),
         DeclareLaunchArgument('angular_scale', default_value='0.2',
